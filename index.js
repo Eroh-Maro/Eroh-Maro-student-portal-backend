@@ -31,10 +31,10 @@ app.use("/auth", authRoutes);
 app.use("/courses", courseRoutes);
 app.use("/auth", forgotRoutes);
 
-/* ================= MongoDB ================= */
+/* ================= MongoDB (Vercel-safe) ================= */
 let isConnected = false;
 
-const connectDB = async () => {
+async function connectDB() {
   if (isConnected) return;
 
   try {
@@ -43,10 +43,15 @@ const connectDB = async () => {
     console.log("✅ MongoDB connected.");
   } catch (err) {
     console.error("❌ MongoDB connection error:", err.message);
+    throw err; // important so Vercel knows it failed
   }
-};
+}
 
-await connectDB();
+/* Connect DB on every request (serverless pattern) */
+app.use(async (req, res, next) => {
+  await connectDB();
+  next();
+});
 
 /* ================= Export for Vercel ================= */
 export default app;
