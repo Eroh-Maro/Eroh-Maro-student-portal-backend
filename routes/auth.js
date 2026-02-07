@@ -9,7 +9,7 @@ import protect from "../middleware/authMiddleware.js";
 const router = express.Router();
 
 const matricRegex =
-  /^(FOS|COS|FNG|FOL|FOE|FOA|PHC|BMS)\/\d{2}\/\d{2}\/\d{4,6}$/i;
+  /^(FOS|FOC|COS|FNG|FOL|FOE|FOA|PHC|BMS)\/\d{2}\/\d{2}\/\d{4,6}$/i;
 
 //
 // SIGNUP — STUDENTS ONLY
