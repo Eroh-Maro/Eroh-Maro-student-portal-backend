@@ -22,6 +22,41 @@ app.use(
 /* ================= Middleware ================= */
 app.use(express.json());
 
+/* ================= MongoDB (Vercel-safe GLOBAL CACHE) ================= */
+
+let cached = global.mongoose;
+
+if (!cached) {
+  cached = global.mongoose = { conn: null, promise: null };
+}
+
+async function connectDB() {
+  if (cached.conn) {
+    return cached.conn;
+  }
+
+  if (!cached.promise) {
+    cached.promise = mongoose.connect(process.env.MONGO_URI, {
+      bufferCommands: false,
+    });
+  }
+
+  cached.conn = await cached.promise;
+  console.log("✅ MongoDB connected");
+  return cached.conn;
+}
+
+/* Connect DB BEFORE routes */
+app.use(async (req, res, next) => {
+  try {
+    await connectDB();
+    next();
+  } catch (err) {
+    console.error("❌ DB connection failed:", err);
+    res.status(500).json({ message: "Database connection failed" });
+  }
+});
+
 /* ================= Routes ================= */
 app.get("/", (req, res) => {
   res.send("Backend running");
@@ -30,28 +65,6 @@ app.get("/", (req, res) => {
 app.use("/auth", authRoutes);
 app.use("/courses", courseRoutes);
 app.use("/auth", forgotRoutes);
-
-/* ================= MongoDB (Vercel-safe) ================= */
-let isConnected = false;
-
-async function connectDB() {
-  if (isConnected) return;
-
-  try {
-    await mongoose.connect(process.env.MONGO_URI);
-    isConnected = true;
-    console.log("✅ MongoDB connected.");
-  } catch (err) {
-    console.error("❌ MongoDB connection error:", err.message);
-    throw err; // important so Vercel knows it failed
-  }
-}
-
-/* Connect DB on every request (serverless pattern) */
-app.use(async (req, res, next) => {
-  await connectDB();
-  next();
-});
 
 /* ================= Export for Vercel ================= */
 export default app;
